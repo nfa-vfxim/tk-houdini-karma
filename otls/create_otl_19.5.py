@@ -136,6 +136,18 @@ def reference_parameter(
     elif hasattr(dist, "addParmTemplate"):
         if org_parameter.name() == "dcm":
             org_parameter.setLabel("Deep camera map")
+        if org_parameter.name() == "light_sampling_mode":
+            org_parameter.setItemGeneratorScript(
+                "opmenu -l -a karmarendersettings light_sampling_mode"
+            )
+        if org_parameter.name() == "vblur":
+            org_parameter.setItemGeneratorScript(
+                "opmenu -l -a karmarendersettings vblur"
+            )
+        if org_parameter.name() == "instance_vblur":
+            org_parameter.setItemGeneratorScript(
+                "opmenu -l -a karmarendersettings instance_vblur"
+            )
         dist.addParmTemplate(org_parameter)
     else:
         print("Undefined method for distributing parameter templates.")
@@ -446,18 +458,28 @@ reference_parameter(
 # Rendering
 rendering = hou.FolderParmTemplate("rendering", "Rendering")
 
+
 # Rendering -> Samples
-for folder in karma_render_settings_parameters.findFolder("Rendering").parmTemplates():
-    if folder.label() == "Sampling":
-        rendering.addParmTemplate(folder)
+secondary_samples = hou.FolderParmTemplate("secondary_sampling", "Secondary")
+reference_parameter(karma_render_settings, secondary_samples, "varianceaa_minsamples")
+reference_parameter(karma_render_settings, secondary_samples, "varianceaa_maxsamples")
 
-        for parameter in folder.parmTemplates():
-            link_parameter(karma_render_settings, parameter.name())
+reference_parameter(karma_render_settings, secondary_samples, "diffusequality")
+reference_parameter(karma_render_settings, secondary_samples, "reflectquality")
+reference_parameter(karma_render_settings, secondary_samples, "refractquality")
+reference_parameter(karma_render_settings, secondary_samples, "volumequality")
+reference_parameter(karma_render_settings, secondary_samples, "sssquality")
 
+reference_parameter(karma_render_settings, secondary_samples, "light_sampling_mode")
+reference_parameter(karma_render_settings, secondary_samples, "light_sampling_quality")
+
+reference_parameter(karma_render_settings, secondary_samples, "screendoorlimit")
+reference_parameter(karma_render_settings, secondary_samples, "volumesteprate")
+
+
+rendering.addParmTemplate(secondary_samples)
 
 # Rendering -> Limits
-rendering_limits = hou.FolderParmTemplate("limits", "Limits")
-
 for folder in karma_render_settings_parameters.findFolder("Rendering").parmTemplates():
     if folder.label() == "Limits":
         rendering.addParmTemplate(folder)
@@ -467,13 +489,62 @@ for folder in karma_render_settings_parameters.findFolder("Rendering").parmTempl
 
 # Rendering -> Camera Effects
 rendering_camera_effects = hou.FolderParmTemplate("camera_effects", "Camera Effects")
+reference_parameter(karma_render_settings, rendering_camera_effects, "enabledof")
+reference_parameter(karma_render_settings, rendering_camera_effects, "enablemblur")
 
-for folder in karma_render_settings_parameters.findFolder("Rendering").parmTemplates():
-    if folder.label() == "Camera Effects":
-        rendering.addParmTemplate(folder)
+motion_blur_settings = hou.FolderParmTemplate(
+    "motion_blur_settings",
+    "Motion Blur",
+    folder_type=hou.folderType.Simple,
+    conditionals={hou.parmCondType.DisableWhen: "{ enablemblur != 1 }"},
+)
+reference_parameter(karma_render_settings, motion_blur_settings, "mblur")
+reference_parameter(
+    karma_render_settings,
+    motion_blur_settings,
+    "xformsamples",
+    (hou.parmCondType.DisableWhen, "{ mblur != 1 }"),
+)
+reference_parameter(
+    karma_render_settings,
+    motion_blur_settings,
+    "geosamples",
+    (hou.parmCondType.DisableWhen, "{ mblur != 1 }"),
+)
+reference_parameter(
+    karma_render_settings,
+    motion_blur_settings,
+    "vblur",
+    (hou.parmCondType.DisableWhen, "{ mblur != 1 }"),
+)
+reference_parameter(
+    karma_render_settings,
+    motion_blur_settings,
+    "instance_vblur",
+    (hou.parmCondType.DisableWhen, "{ mblur != 1 }"),
+)
+reference_parameter(
+    karma_render_settings,
+    motion_blur_settings,
+    "instance_samples",
+    (hou.parmCondType.DisableWhen, "{ mblur != 1 }"),
+)
+reference_parameter(
+    karma_render_settings,
+    motion_blur_settings,
+    "volumevblurscale",
+    (hou.parmCondType.DisableWhen, "{ mblur != 1 }"),
+)
+reference_parameter(
+    karma_render_settings,
+    motion_blur_settings,
+    "disableimageblur",
+    (hou.parmCondType.DisableWhen, "{ velocity == 0 motionvectors == 0 }"),
+)
 
-        for parameter in folder.parmTemplates():
-            link_parameter(karma_render_settings, parameter.name())
+rendering_camera_effects.addParmTemplate(motion_blur_settings)
+
+rendering.addParmTemplate(rendering_camera_effects)
 
 
 hda_parameters.append(rendering)
@@ -484,7 +555,6 @@ aovs = hou.FolderParmTemplate("aovs", "AOVs")
 
 denoise_checkbox = hou.ToggleParmTemplate("denoise", "Denoise AOVs")
 aovs.addParmTemplate(denoise_checkbox)
-# To do: Rename DCM
 
 
 # AOVs -> Component level output
