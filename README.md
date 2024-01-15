@@ -2,7 +2,7 @@
 A ShotGrid app for rendering with Karma in our ShotGrid pipeline.
 
 ## Features
-- Auto render paths & names based on ShotGrid configuration.
+- Auto render paths & names based on ShotGrid configuration
 - Built-in Deadline render farm submission
 - Auto denoise on Deadline render farm
 - Easy light group setup (integrates with this Nuke [lightmixer](https://github.com/BreakTools/LightGroupMixer))
