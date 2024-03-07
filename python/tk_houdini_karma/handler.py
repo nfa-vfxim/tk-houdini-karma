@@ -24,6 +24,8 @@ class karma_node_handler(object):
         Args:
             node (hou.Node): USD Render ROP node
         """
+        node.allowEditingOfContents()
+
         if not self.setup_output_paths(node):
             return
 
@@ -45,10 +47,6 @@ class karma_node_handler(object):
         framerange = self.get_output_range(node)
         framerange = f"{framerange[0]}-{framerange[1]}"
 
-        # Open node so it will work on the farm
-        # even if the node is not installed
-        node.allowEditingOfContents()
-
         # Start submission panel
         render_aovs = self.get_render_aovs(node)
 
@@ -58,13 +56,15 @@ class karma_node_handler(object):
         )
         farm_submission.show()
 
-    def render_locally(self, node: hou.Node):
+    def render_locally(self, node: hou.Node) -> None:
         """Start local render
 
         Args:
             node (hou.Node): RenderMan node
             network (str): Network type
         """
+        node.allowEditingOfContents()
+
         if not self.setup_output_paths(node):
             return
 

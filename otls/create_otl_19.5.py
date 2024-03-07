@@ -7,7 +7,7 @@ To build the OTL you must run this from a Houdini python shell:
 
 exec(open(r"path-to-app\tk-houdini-karma\otls\create_otl.py").read())
 
-exec(open(r"C:/Users/Mervin.vanBrakel/Documents/Meesterproef/tk-houdini-karma/tk-houdini-karma/otls/create_otl_19.5.py").read())
+exec(open(r"C:/Users/Mervin.vanBrakel/Documents/ShotGrid/DevApps/tk-houdini-karma/otls/create_otl_19.5.py").read())
 """
 
 import os
@@ -17,7 +17,7 @@ import hou
 
 # Set the path to the OTL folder here. We can't use something like os.path.realpath because
 # we're running this from within an interactive shell.
-OTL_FOLDER = "C:/Users/Mervin.vanBrakel/Documents/Meesterproef/tk-houdini-karma/tk-houdini-karma/otls"
+OTL_FOLDER = "C:/Users/Mervin.vanBrakel/Documents/ShotGrid/DevApps/tk-houdini-karma/otls/"
 
 
 # The following functions help us with building the OTL.
@@ -134,6 +134,7 @@ def reference_parameter(
 
         dist.append(org_parameter)
     elif hasattr(dist, "addParmTemplate"):
+        # I couldn't find another place to add generator scripts so this mess will have to do
         if org_parameter.name() == "dcm":
             org_parameter.setLabel("Deep camera map")
         if org_parameter.name() == "light_sampling_mode":
@@ -148,6 +149,11 @@ def reference_parameter(
             org_parameter.setItemGeneratorScript(
                 "opmenu -l -a karmarendersettings instance_vblur"
             )
+        if org_parameter.name() == "aspectRatioConformPolicy":
+            org_parameter.setItemGeneratorScript(
+                "opmenu -l -a karmarendersettings aspectRatioConformPolicy"
+            )
+
         dist.addParmTemplate(org_parameter)
     else:
         print("Undefined method for distributing parameter templates.")
@@ -302,6 +308,9 @@ switch.parm("input").setExpression(
 # Setting the render product settings
 render_product_edit.parm("createprims").set("off")
 render_product_edit.parm("primpattern").set("/Render/Products/dcm")
+render_product_edit.parm("orderedVars_control").set("none")
+render_product_edit.parm("productName_control").set("none")
+render_product_edit.parm("productType_control").set("none")
 render_product_edit.parm("xn__karmaproductdcmzbias_control_nmbh").set("set")
 
 # Setting the metadata wrangle settings
@@ -546,6 +555,13 @@ rendering_camera_effects.addParmTemplate(motion_blur_settings)
 
 rendering.addParmTemplate(rendering_camera_effects)
 
+# Rendering -> Aspect Ratio
+rendering_aspect_ratio = hou.FolderParmTemplate("aspect_ratio", "Aspect Ratio")
+reference_parameter(karma_render_settings, rendering_aspect_ratio, "aspectRatioConformPolicy")
+reference_parameter(karma_render_settings, rendering_aspect_ratio, "dataWindowNDC")
+reference_parameter(karma_render_settings, rendering_aspect_ratio, "pixelAspectRatio")
+
+rendering.addParmTemplate(rendering_aspect_ratio)
 
 hda_parameters.append(rendering)
 
@@ -787,8 +803,59 @@ light_groups.addParmTemplate(light_group_item)
 
 
 aovs.addParmTemplate(light_groups)
-hda_parameters.append(aovs)
 
+
+# AOVs -> pRefs
+# Still working on this, will be functional in the next update :)
+# prefs = hou.FolderParmTemplate(
+#     "prefs",
+#     "pRefs",
+#     folder_type=hou.folderType.Simple,
+# )
+
+# prefs.addParmTemplate(
+#     hou.ButtonParmTemplate(
+#         "setup_prefs",
+#         "Update pRefs",
+#         script_callback="hou.phm().setup_prefs(kwargs['node'])",
+#         script_callback_language=hou.scriptLanguage.Python,
+#     )
+# )
+
+# pref_item = hou.FolderParmTemplate(
+#     "pref_select",
+#     "Light Groups",
+#     folder_type=hou.folderType.MultiparmBlock,
+# )
+
+
+# pref_primpattern_list = hou.StringParmTemplate(
+#     "select_pref_#",
+#     "Select object",
+#     1,
+#     string_type=hou.stringParmType.NodeReference,
+#     naming_scheme=hou.parmNamingScheme.Base1,
+#     tags={
+#         "opfilter": "!!LOP!!",
+#         "oprelative": ".",
+#     },
+# )
+
+# pref_source_frame = hou.IntParmTemplate(
+#     "pref_source_frame#",
+#     "Source frame",
+#     1,
+# )
+
+# pref_item.addParmTemplate(pref_primpattern_list)
+# pref_item.addParmTemplate(pref_source_frame)
+# pref_item.addParmTemplate(hou.SeparatorParmTemplate("prefSep#"))
+
+# prefs.addParmTemplate(pref_item)
+# aovs.addParmTemplate(prefs)
+
+
+hda_parameters.append(aovs)
 
 # Metadata
 metadata_folder = hou.FolderParmTemplate("metadata_folder", "Metadata")

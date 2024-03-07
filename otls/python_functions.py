@@ -140,6 +140,8 @@ def setup_light_groups(karma_node: hou.Node) -> None:
         )
         karma_render_settings.parm(f"sourceType{render_variable_index}").set("lpe")
 
+def setup_prefs(karma_node: hou.Node) -> None:
+    pass
 
 def setup_deep_settings(node: hou.Node) -> None:
     karma_render_settings = node.node("karmarendersettings")
