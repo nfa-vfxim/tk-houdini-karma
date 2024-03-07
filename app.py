@@ -43,6 +43,14 @@ class tk_houdini_karma(sgtk.platform.Application):
         """
         return self.handler.get_output_path(node, aov_name)
 
+    def get_output_range(self, node: hou.Node) -> list[int]:
+        """Get output frame range for the Karma node
+
+        Args:
+            node (hou.Node): SGTK Karma Render node
+        """
+        return self.handler.get_output_range(node)
+
     def validate_node(self, node: hou.Node) -> str:
         """This function will make sure all the parameters
         are filled in and setup correctly.
