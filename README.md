@@ -6,6 +6,7 @@ A ShotGrid app for rendering with Karma in our ShotGrid pipeline.
 - Built-in Deadline render farm submission
 - Auto denoise on Deadline render farm
 - Easy light group setup (integrates with this Nuke [lightmixer](https://github.com/BreakTools/LightGroupMixer))
+- Easy pRef setup (based on [this post](https://www.andreaskj.com/live-pref-in-solaris/) by Andreas Kjær-Jensen)
 - Simplified deep render settings
 - New way of adding metadata to rendered EXRs
 
@@ -19,3 +20,5 @@ A ShotGrid app for rendering with Karma in our ShotGrid pipeline.
 ### Auto lightgroup workflow
 ![lightgroupgif](https://github.com/nfa-vfxim/tk-houdini-karma/assets/63094424/9db08b40-bfaa-413c-a9c8-499fcad3a8c9)
 
+### Auto pRef workflow
+![prefgif](https://github.com/nfa-vfxim/tk-houdini-karma/assets/63094424/b78b3730-c179-4a45-872c-e6436e0531dd)
