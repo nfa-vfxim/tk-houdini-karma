@@ -34,6 +34,14 @@ class tk_houdini_karma(sgtk.platform.Application):
         """
         self.handler.submit_to_farm(node)
 
+    def open_folder(self, node: hou.Node) -> None:
+        """Opens the render folder in the OS appropriate file program.
+
+        Args:
+            node (hou.Node):  SGTK Karma Render node
+        """
+        self.handler.open_folder(node)
+
     def get_output_path(self, node: hou.Node, aov_name: str) -> str:
         """Calculate render path for an aov
 
