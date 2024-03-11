@@ -17,7 +17,9 @@ import hou
 
 # Set the path to the OTL folder here. We can't use something like os.path.realpath because
 # we're running this from within an interactive shell.
-OTL_FOLDER = "C:/Users/Mervin.vanBrakel/Documents/ShotGrid/DevApps/tk-houdini-karma/otls/"
+OTL_FOLDER = (
+    "C:/Users/Mervin.vanBrakel/Documents/ShotGrid/DevApps/tk-houdini-karma/otls/"
+)
 
 
 # The following functions help us with building the OTL.
@@ -257,24 +259,31 @@ hda = hou.node("/stage/").createNode("subnet", "SGTK_Karma_Render")
 # Input null needed by loputils to fetch camera list for some reason
 null_node = hda.createNode("null", "input")
 karma_render_settings = hda.createNode("karmarenderproperties", "karmarendersettings")
-switch = hda.createNode("switch", "crypto_switch")
 karma_cryptomatte = hda.createNode("karmacryptomatte", "karmacryptomatte")
+crypto_switch = hda.createNode("switch", "crypto_switch")
+motionblur = hda.createNode("motionblur", "motionblur")
+motionblur_switch = hda.createNode("switch", "motionblur_switch")
 render_product_edit = hda.createNode("renderproduct", "renderproduct_edit")
 node_user_metadata = hda.createNode("attribwrangle", "user_metadata")
 node_sg_metadata = hda.createNode("attribwrangle", "sg_metadata")
+python_node = hda.createNode("pythonscript", "pRef_caller")
 usdrender_rop = hda.createNode("usdrender_rop", "usdrender_rop")
 output_node = hda.createNode("output", "output0")
 
 # Link nodes
 karma_render_settings.setInput(0, null_node)
 karma_cryptomatte.setInput(0, karma_render_settings)
-switch.setInput(0, karma_render_settings)
-switch.setInput(1, karma_cryptomatte)
-render_product_edit.setInput(0, switch)
+crypto_switch.setInput(0, karma_render_settings)
+crypto_switch.setInput(1, karma_cryptomatte)
+motionblur.setInput(0, crypto_switch)
+motionblur_switch.setInput(0, crypto_switch)
+motionblur_switch.setInput(1, motionblur)
+render_product_edit.setInput(0, motionblur_switch)
 node_user_metadata.setInput(0, render_product_edit)
 node_sg_metadata.setInput(0, node_user_metadata)
-usdrender_rop.setInput(0, node_sg_metadata)
-output_node.setInput(0, node_sg_metadata)
+python_node.setInput(0, node_sg_metadata)
+usdrender_rop.setInput(0, python_node)
+output_node.setInput(0, python_node)
 output_node.setDisplayFlag(True)
 
 hda.layoutChildren(
@@ -282,10 +291,13 @@ hda.layoutChildren(
         null_node,
         karma_cryptomatte,
         karma_render_settings,
-        switch,
+        crypto_switch,
+        motionblur,
+        motionblur_switch,
         render_product_edit,
         node_user_metadata,
         node_sg_metadata,
+        python_node,
         usdrender_rop,
         output_node,
     )
@@ -299,9 +311,15 @@ karma_render_settings.parm("dcmcompression").set(1)
 # Setting standard cryptomatte settings
 karma_cryptomatte.parm("renderproductmode").set(1)
 
-# Setting standard switch settings
-switch.parm("input").setExpression(
+# Setting standard crypto_switch settings
+crypto_switch.parm("input").setExpression(
     '1 if hou.pwd().inputs()[1].evalParm("doprimcrypto") or hou.pwd().inputs()[1].evalParm("domtlcrypto") else 0',
+    language=hou.exprLanguage.Python,
+)
+
+# Setting standard motionblur_switch settings
+motionblur_switch.parm("input").setExpression(
+    '1 if hou.pwd().parent().evalParm("enablemblur") else 0',
     language=hou.exprLanguage.Python,
 )
 
@@ -350,13 +368,18 @@ for i, node in enumerate([node_user_metadata, node_sg_metadata]):
 usd_setattrib(0, @primpath, "driver:parameters:artist", chs("artist"));'
     )
 
+# Setting the python pRef system setting
+python_node.parm("python").set(
+    "hou.pwd().parent().hdaModule().compute_pref_point_references(hou.pwd().parent(), hou.pwd().editableStage())"
+)
+
 # Creating the HDA
 hda = hou.Node.createDigitalAsset(
     hda,
     "sgtk_karma",
     os.path.join(OTL_FOLDER, "sgtk_karma.otl"),
     min_num_inputs=2,
-    version="1",
+    version="1.0.3",
     ignore_external_references=True,
 )
 hda.type().setDefaultColor(hou.Color(0.9, 0.5, 0.2))
@@ -408,6 +431,16 @@ hda_parameters.append(
         script_callback_language=hou.scriptLanguage.Python,
     )
 )
+hda_parameters.append(
+    hou.ButtonParmTemplate(
+        "openFolder",
+        "Open folder",
+        join_with_next=True,
+        script_callback="hou.phm().open_folder(kwargs['node'])",
+        script_callback_language=hou.scriptLanguage.Python,
+    )
+)
+
 
 hda_parameters.append(hou.SeparatorParmTemplate("sep_1"))
 
@@ -434,7 +467,7 @@ resolution_parm_template = hou.IntParmTemplate(
     "resolution",
     "Resolution",
     2,
-    default_value=(1280, 720),
+    default_value=(1920, 1080),
     script_callback="hou.phm().update_resolution(kwargs['node'])",
     script_callback_language=hou.scriptLanguage.Python,
 )
@@ -557,7 +590,9 @@ rendering.addParmTemplate(rendering_camera_effects)
 
 # Rendering -> Aspect Ratio
 rendering_aspect_ratio = hou.FolderParmTemplate("aspect_ratio", "Aspect Ratio")
-reference_parameter(karma_render_settings, rendering_aspect_ratio, "aspectRatioConformPolicy")
+reference_parameter(
+    karma_render_settings, rendering_aspect_ratio, "aspectRatioConformPolicy"
+)
 reference_parameter(karma_render_settings, rendering_aspect_ratio, "dataWindowNDC")
 reference_parameter(karma_render_settings, rendering_aspect_ratio, "pixelAspectRatio")
 
@@ -807,52 +842,58 @@ aovs.addParmTemplate(light_groups)
 
 # AOVs -> pRefs
 # Still working on this, will be functional in the next update :)
-# prefs = hou.FolderParmTemplate(
-#     "prefs",
-#     "pRefs",
-#     folder_type=hou.folderType.Simple,
-# )
+prefs = hou.FolderParmTemplate(
+    "prefs",
+    "pRefs",
+    folder_type=hou.folderType.Simple,
+)
 
-# prefs.addParmTemplate(
-#     hou.ButtonParmTemplate(
-#         "setup_prefs",
-#         "Update pRefs",
-#         script_callback="hou.phm().setup_prefs(kwargs['node'])",
-#         script_callback_language=hou.scriptLanguage.Python,
-#     )
-# )
+prefs.addParmTemplate(
+    hou.ButtonParmTemplate(
+        "setup_prefs",
+        "Update pRefs",
+        script_callback="hou.phm().setup_prefs(kwargs['node'])",
+        script_callback_language=hou.scriptLanguage.Python,
+    )
+)
 
-# pref_item = hou.FolderParmTemplate(
-#     "pref_select",
-#     "Light Groups",
-#     folder_type=hou.folderType.MultiparmBlock,
-# )
+pref_item = hou.FolderParmTemplate(
+    "pref_select",
+    "pRefs",
+    folder_type=hou.folderType.MultiparmBlock,
+)
 
+pref_name = hou.StringParmTemplate(
+    "pref_name_#",
+    "Name",
+    1,
+    string_type=hou.stringParmType.Regular,
+    naming_scheme=hou.parmNamingScheme.Base1,
+)
 
-# pref_primpattern_list = hou.StringParmTemplate(
-#     "select_pref_#",
-#     "Select object",
-#     1,
-#     string_type=hou.stringParmType.NodeReference,
-#     naming_scheme=hou.parmNamingScheme.Base1,
-#     tags={
-#         "opfilter": "!!LOP!!",
-#         "oprelative": ".",
-#     },
-# )
+pref_primpattern_list = hou.StringParmTemplate(
+    "select_pref_#",
+    "Select object",
+    1,
+    string_type=hou.stringParmType.NodeReference,
+    naming_scheme=hou.parmNamingScheme.Base1,
+    tags={
+        "opfilter": "!!LOP!!",
+        "oprelative": ".",
+    },
+)
 
-# pref_source_frame = hou.IntParmTemplate(
-#     "pref_source_frame#",
-#     "Source frame",
-#     1,
-# )
+pref_source_frame = hou.IntParmTemplate(
+    "pref_source_frame_#", "Source frame", 1, min=0, max=3000
+)
 
-# pref_item.addParmTemplate(pref_primpattern_list)
-# pref_item.addParmTemplate(pref_source_frame)
-# pref_item.addParmTemplate(hou.SeparatorParmTemplate("prefSep#"))
+pref_item.addParmTemplate(pref_name)
+pref_item.addParmTemplate(pref_primpattern_list)
+pref_item.addParmTemplate(pref_source_frame)
+pref_item.addParmTemplate(hou.SeparatorParmTemplate("prefSep#"))
 
-# prefs.addParmTemplate(pref_item)
-# aovs.addParmTemplate(prefs)
+prefs.addParmTemplate(pref_item)
+aovs.addParmTemplate(prefs)
 
 
 hda_parameters.append(aovs)

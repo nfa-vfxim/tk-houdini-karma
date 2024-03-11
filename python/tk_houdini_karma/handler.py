@@ -83,6 +83,25 @@ class karma_node_handler(object):
             severity=hou.severityType.Message,
         )
 
+    def open_folder(self, node: hou.Node) -> None:
+        """Opens the render folder in the OS appropriate file program.
+
+        Args:
+            node (hou.Node): SGTK Karma Node
+        """
+        if not self.setup_output_paths(node):
+            return
+
+        render_paths = self.get_output_paths(node)
+
+        for path in render_paths:
+            self.__create_directory(path)
+
+        path_to_render = os.path.dirname(render_paths[0])
+        render_parent_path = os.path.dirname(path_to_render)
+
+        os.startfile(os.path.abspath(render_parent_path))
+
     @staticmethod
     def validate_node(node: hou.Node) -> bool:
         """This function will make sure all the parameters
@@ -135,9 +154,11 @@ class karma_node_handler(object):
                 MetaData(
                     key,
                     md.get("type"),
-                    f'`{md.get("expression")}`'
-                    if md.get("expression")
-                    else md.get("value"),
+                    (
+                        f'`{md.get("expression")}`'
+                        if md.get("expression")
+                        else md.get("value")
+                    ),
                 )
             )
             group = md.get("group")
@@ -342,7 +363,6 @@ class karma_node_handler(object):
         )
         render_aovs += self.get_lightgroup_aovs(node)
 
-        print(render_aovs)
         return render_aovs
 
     @staticmethod
