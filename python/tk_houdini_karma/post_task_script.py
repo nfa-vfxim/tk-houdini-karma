@@ -108,7 +108,7 @@ def denoise_frames(
         arguments = construct_denoise_arguments(render_aov_list)
 
         path_to_denoiser = (
-            "C:/Program Files/Side Effects Software/Houdini 19.5.640/bin/idenoise.exe"
+            "C:/Program Files/Side Effects Software/Houdini 20.0.590/bin/idenoise.exe"
         )
         command_to_run = f"{path_to_denoiser} {main_render_file_path} {denoise_render_file_path} {arguments}"
 
