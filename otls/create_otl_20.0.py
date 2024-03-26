@@ -376,6 +376,9 @@ usd_setattrib(0, @primpath, "driver:parameters:artist", chs("artist"));'
 python_node.parm("python").set(pRef_caller_file)
 
 # Setting the render rop settings
+usdrender_rop.parm("f1").setExpression('ch("../f1")')
+usdrender_rop.parm("f2").setExpression('ch("../f2")')
+usdrender_rop.parm("f3").setExpression('ch("../f3")')
 usdrender_rop.parm("rendersettings").setExpression(
     'chs("../karmarendersettings/primpath")'
 )
