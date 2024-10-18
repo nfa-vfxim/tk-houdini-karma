@@ -4,8 +4,6 @@ so we can import and link them to our Houdini OTL."""
 import hou
 import re
 
-from pxr import Sdf, UsdGeom
-
 
 class ValidationError(Exception):
     pass
