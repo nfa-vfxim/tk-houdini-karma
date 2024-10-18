@@ -1,13 +1,13 @@
 """This slightly messy and large file is used to create the SGTK Karma OTL.
 We build the OTL using this file so we can easily change things and rebuild the OTL
-without going into Houdini and clicking a bunch of messy buttons. This file is 
+without going into Houdini and clicking a bunch of messy buttons. This file is
 long and a bit unorganized, however this is still better than the alternative.
 
 To build the OTL you must run this from a Houdini python shell:
 
 exec(open(r"path-to-app\tk-houdini-karma\otls\create_otl.py").read())
 
-exec(open(r"C:/Users/Mervin.vanBrakel/Documents/ShotGrid/DevApps/tk-houdini-karma/otls/create_otl_20.0.py").read())
+exec(open(r"C:/Users/Mervin.vanBrakel/Documents/GitHub/tk-houdini-karma/otls/create_otl_20.0.py").read())
 """
 
 import os
@@ -17,12 +17,10 @@ import hou
 
 # Set the path to the OTL folder here. We can't use something like os.path.realpath because
 # we're running this from within an interactive shell.
-OTL_FOLDER = (
-    "C:/Users/Mervin.vanBrakel/Documents/ShotGrid/DevApps/tk-houdini-karma/otls/"
-)
+OTL_FOLDER = "C:/Users/Mervin.vanBrakel/Documents/GitHub/tk-houdini-karma/otls/"
 
 pRef_caller_file = open(
-    r"C:/Users/Mervin.vanBrakel/Documents/ShotGrid/DevApps/tk-houdini-karma/otls/pRef_caller.py"
+    r"C:/Users/Mervin.vanBrakel/Documents/GitHub/tk-houdini-karma/otls/pRef_caller.py"
 ).read()
 
 
@@ -268,6 +266,7 @@ crypto_switch = hda.createNode("switch", "crypto_switch")
 motionblur = hda.createNode("motionblur", "motionblur")
 motionblur_switch = hda.createNode("switch", "motionblur_switch")
 render_product_edit = hda.createNode("renderproduct", "renderproduct_edit")
+uv_rendervar_edit = hda.createNode("rendervar", "uv_rendervar_edit")
 node_user_metadata = hda.createNode("attribwrangle", "user_metadata")
 node_sg_metadata = hda.createNode("attribwrangle", "sg_metadata")
 python_node = hda.createNode("pythonscript", "pRef_caller")
@@ -283,7 +282,8 @@ motionblur.setInput(0, crypto_switch)
 motionblur_switch.setInput(0, crypto_switch)
 motionblur_switch.setInput(1, motionblur)
 render_product_edit.setInput(0, motionblur_switch)
-node_user_metadata.setInput(0, render_product_edit)
+uv_rendervar_edit.setInput(0, render_product_edit)
+node_user_metadata.setInput(0, uv_rendervar_edit)
 node_sg_metadata.setInput(0, node_user_metadata)
 python_node.setInput(0, node_sg_metadata)
 usdrender_rop.setInput(0, python_node)
@@ -299,6 +299,7 @@ hda.layoutChildren(
         motionblur,
         motionblur_switch,
         render_product_edit,
+        uv_rendervar_edit,
         node_user_metadata,
         node_sg_metadata,
         python_node,
@@ -334,6 +335,15 @@ render_product_edit.parm("orderedVars_control").set("none")
 render_product_edit.parm("productName_control").set("none")
 render_product_edit.parm("productType_control").set("none")
 render_product_edit.parm("xn__karmaproductdcmzbias_control_nmbh").set("set")
+
+# Changing the UV var to use the ST product instead of hituv.
+# HitUV is like, totally not useful and I'm not sure what that's the default.
+uv_rendervar_edit.parm("createprims").set("off")
+uv_rendervar_edit.parm("primpattern").set("/Render/Products/Vars/UV")
+uv_rendervar_edit.parm("sourceName").set("st")
+uv_rendervar_edit.parm("sourceType").set("primvar")
+uv_rendervar_edit.parm("xn__driverparametersaovname_jebkd").set("UV")
+uv_rendervar_edit.parm("xn__driverparametersaovformat_shbkd").set("color3f")
 
 # Setting the metadata wrangle settings
 for i, node in enumerate([node_user_metadata, node_sg_metadata]):
@@ -885,7 +895,6 @@ aovs.addParmTemplate(light_groups)
 
 
 # AOVs -> pRefs
-# Still working on this, will be functional in the next update :)
 prefs = hou.FolderParmTemplate(
     "prefs",
     "pRefs",
