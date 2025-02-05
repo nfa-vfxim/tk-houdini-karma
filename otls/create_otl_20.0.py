@@ -20,7 +20,7 @@ import hou
 OTL_FOLDER = "C:/Users/Mervin.vanBrakel/Documents/GitHub/tk-houdini-karma/otls/"
 
 pRef_caller_file = open(
-    r"C:/Users/Mervin.vanBrakel/Documents/GitHub/tk-houdini-karma/otls/pRef_caller.py"
+    f"{OTL_FOLDER}/pRef_caller.py"
 ).read()
 
 
