@@ -141,6 +141,8 @@ class karma_node_handler(object):
 
     def setup_metadata(self, node: hou.Node) -> bool:
         """Sets ShotGrid metadata and validates user-set metadata. 'Borrowed' from tk-houdini-renderman."""
+        node.allowEditingOfContents()
+
         md_config = self.app.get_setting("render_metadata")
 
         md_items = [
@@ -208,6 +210,7 @@ class karma_node_handler(object):
 
     def setup_output_paths(self, node: hou.Node) -> bool:
         """This function sets the proper ShotGrid output paths for our node."""
+        node.allowEditingOfContents()
 
         karma_renderingsettings_node = node.node("karmarendersettings")
         karma_crypto_node = node.node("karmacryptomatte")
