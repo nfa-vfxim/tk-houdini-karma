@@ -139,7 +139,7 @@ class karma_node_handler(object):
 
         return True
 
-    def setup_metadata(self, node: hou.Node) -> None:
+    def setup_metadata(self, node: hou.Node) -> bool:
         """Sets ShotGrid metadata and validates user-set metadata. 'Borrowed' from tk-houdini-renderman."""
         md_config = self.app.get_setting("render_metadata")
 
