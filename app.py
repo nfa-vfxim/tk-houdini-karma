@@ -74,7 +74,7 @@ class tk_houdini_karma(sgtk.platform.Application):
         Args:
             node (hou.Node): SGTK Karma Render node
         """
-        return self.handler.setup_metadata(self, node)
+        return self.handler.setup_metadata(node)
 
     def setup_output_paths(self, node: hou.Node) -> bool:
         """Sets the correct outputs on the SGTK Karma Render node
@@ -82,7 +82,7 @@ class tk_houdini_karma(sgtk.platform.Application):
         Args:
             node (hou.Node): SGTK Karma Render node
         """
-        return self.handler.setup_aovs(node)
+        return self.handler.setup_output_paths(node)
 
     def get_output_paths(self, node: hou.Node) -> list[str]:
         """Get output paths for the SGTK Karma Render node
