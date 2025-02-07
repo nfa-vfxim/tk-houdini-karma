@@ -6,7 +6,7 @@ configuration:
 
   output_render_template:
     type: template
-    fields: context, version, SEQ, [aov_name], [name], [width], [height], *
+    fields: context, version, SEQ, [node], [aov_name], [name], [width], [height], *
     description: A template which describes the output of the render.
 
   render_metadata:
