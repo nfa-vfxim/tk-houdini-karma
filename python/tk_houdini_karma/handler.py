@@ -248,6 +248,7 @@ class karma_node_handler(object):
 
         # Set fields
         fields = work_template.get_fields(current_filepath)
+        fields["output"] = fields["name"]
         fields["SEQ"] = "FORMAT: $F"
         fields["node"] = node.parm("name").eval()
         fields["aov_name"] = aov_name
