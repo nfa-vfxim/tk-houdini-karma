@@ -409,7 +409,7 @@ hda.type().setDefaultColor(hou.Color(0.9, 0.5, 0.2))
 hda_def = hda.type().definition()
 hda_options = hda_def.options()
 
-python_module = open(os.path.join(OTL_FOLDER, "python_functions.py"), "r")
+python_module = open(os.path.join(OTL_FOLDER, "python_functions_20.5.py"), "r")
 
 hda_def.addSection("PythonModule", python_module.read())
 hda_def.setExtraFileOption("python_functions/IsPython", True)
