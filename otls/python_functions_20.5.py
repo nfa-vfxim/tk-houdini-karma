@@ -207,6 +207,42 @@ def setup_light_groups(karma_node: hou.Node) -> None:
     add_all_automated_lightgroups_to_render_vars(light_groups_info, karma_node)
 
 
+def add_all_lights_to_lightgroups(karma_node: hou.Node) -> None:
+    """adds all the lights that are found in stage.
+    
+    Args:
+        karma_node: SGTK Karma node
+    """
+    stage = hou.node("/stage")
+    stage_nodes = stage.children()
+    light_types = [
+        "<hou.OpNodeType for Lop light::2.0>",
+        "<hou.OpNodeType for Lop domelight::3.0>",
+        "<hou.OpNodeType for Lop distantlight::2.0>",
+        "<hou.OpNodeType for Lop karmaphysicalsky>",
+        "<hou.OpNodeType for Lop karmaskydomelight>"
+    ]
+
+    lightgroup_names = []
+    lightgroup_paths = []
+
+    for node in stage_nodes:
+        if str(node.type()) in light_types:
+            relative_path = node.path().replace("/stage/", "../")
+            lightgroup_paths.append(relative_path)
+            lightgroup_names.append(node.name())
+
+    karma_node.parm("light_groups_select").set(str(len(lightgroup_names)))
+
+    light_group_multiparm_count = karma_node.parm("light_groups_select").eval()
+
+    for light_group_index in range(1, light_group_multiparm_count + 1):
+        light_group_name_parm = f"light_group_name_{light_group_index}"
+        selected_light_lops_parm = f"select_light_lops_{light_group_index}"
+
+        karma_node.parm(light_group_name_parm).set(lightgroup_names[light_group_index - 1])
+        karma_node.parm(selected_light_lops_parm).set(lightgroup_paths[light_group_index - 1])
+
 def add_all_automated_prefs_to_render_vars(karma_node: hou.Node) -> None:
     """Adds all our prefs to the karma render settings additional
     render variables.
