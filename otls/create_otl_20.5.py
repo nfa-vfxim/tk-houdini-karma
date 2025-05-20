@@ -857,6 +857,15 @@ light_groups.addParmTemplate(
     )
 )
 
+light_groups.addParmTemplate(
+    hou.ButtonParmTemplate(
+        "add_all_lights_to_lightgroups",
+        "Add all lights",
+        script_callback="hou.phm().add_all_lights_to_lightgroups(kwargs['node'])",
+        script_callback_language=hou.scriptLanguage.Python,
+    )
+)
+
 light_group_item = hou.FolderParmTemplate(
     "light_groups_select",
     "Light Groups",
