@@ -248,13 +248,11 @@ class karma_node_handler(object):
 
         # Set fields
         fields = work_template.get_fields(current_filepath)
-        fields["output"] = fields["name"]
+        fields["output"] = node.parm("name").eval()
         fields["SEQ"] = "FORMAT: $F"
-        fields["node"] = node.parm("name").eval()
         fields["aov_name"] = aov_name
         fields["width"] = node.parm("resolutionx").eval()
         fields["height"] = node.parm("resolutiony").eval()
-
         return render_template.apply_fields(fields).replace(os.sep, "/")
 
     def get_output_paths(self, node: hou.Node) -> list[str]:
