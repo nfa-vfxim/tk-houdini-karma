@@ -186,7 +186,7 @@ def setup_light_groups(karma_node: hou.Node) -> None:
         karma_node : SGTK Karma render node
     """
 
-    stage = hou.node("/stage")
+    stage = karma_node.parent()
 
     clear_all_automated_lightgroup_lpe_tags(stage.allSubChildren())
 
@@ -213,7 +213,7 @@ def add_all_lights_to_lightgroups(karma_node: hou.Node) -> None:
     Args:
         karma_node: SGTK Karma node
     """
-    stage = hou.node("/stage")
+    stage = karma_node.parent()
     stage_nodes = stage.children()
     light_types = [
         "<hou.OpNodeType for Lop light::2.0>",
@@ -228,7 +228,7 @@ def add_all_lights_to_lightgroups(karma_node: hou.Node) -> None:
 
     for node in stage_nodes:
         if str(node.type()) in light_types:
-            relative_path = node.path().replace("/stage/", "../")
+            relative_path = node.path()
             lightgroup_paths.append(relative_path)
             lightgroup_names.append(node.name())
 
