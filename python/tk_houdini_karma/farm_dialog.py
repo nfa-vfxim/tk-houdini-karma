@@ -4,7 +4,12 @@ import tempfile
 from subprocess import check_output
 
 import hou
-from PySide2 import QtWidgets
+
+# Houdini 21+ ships PySide6 only, older versions PySide2.
+try:
+    from PySide6 import QtWidgets
+except ImportError:
+    from PySide2 import QtWidgets
 
 from .get_smart_frame_list import get_smart_frame_list
 

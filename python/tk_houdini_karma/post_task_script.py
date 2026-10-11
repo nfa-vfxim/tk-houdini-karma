@@ -2,6 +2,7 @@
 into seperate denoised files."""
 
 import ast
+import glob
 import os
 import subprocess
 
@@ -59,12 +60,45 @@ def __main__(*args):
         output_directories, output_filenames
     )
 
+    path_to_denoiser = find_denoiser(deadline_plugin, job)
+
     denoise_frames(
         deadline_plugin,
+        path_to_denoiser,
         frame_numbers,
         render_aov_list,
         filename_to_denoise,
         directory_to_denoise,
+    )
+
+
+def find_denoiser(deadline_plugin, job) -> str:
+    """Returns the idenoise.exe of the Houdini version the job was rendered with.
+
+    It sits next to the hython the Houdini plugin uses for that version, so this
+    follows the executables configured in Deadline Monitor.
+    """
+    version = job.GetJobPluginInfoKeyValue("Version")  # e.g. "21.0"
+    config_key = "Houdini%s_Hython_Executable" % version.replace(".", "_")
+    hython = FileUtils.SearchFileList(
+        deadline_plugin.GetConfigEntryWithDefault(config_key, "")
+    )
+    candidates = [os.path.join(os.path.dirname(hython), "idenoise.exe")] if hython else []
+    # Fallback: the newest installed build of that version.
+    candidates += sorted(
+        glob.glob(
+            "C:/Program Files/Side Effects Software/Houdini %s.*/bin/idenoise.exe"
+            % version
+        ),
+        reverse=True,
+    )
+
+    for candidate in candidates:
+        if os.path.isfile(candidate):
+            return candidate
+
+    raise RuntimeError(
+        "Could not find idenoise.exe for Houdini %s on this Worker." % version
     )
 
 
@@ -84,6 +118,7 @@ def get_denoisable_output_directory_and_filename(
 
 def denoise_frames(
     deadline_plugin,
+    path_to_denoiser: str,
     frame_numbers: range,
     render_aov_list: str,
     output_filename: str,
@@ -107,30 +142,38 @@ def denoise_frames(
 
         arguments = construct_denoise_arguments(render_aov_list)
 
-        path_to_denoiser = (
-            "C:/Program Files/Side Effects Software/Houdini 20.0.590/bin/idenoise.exe"
+        command_to_run = [
+            path_to_denoiser,
+            main_render_file_path,
+            denoise_render_file_path,
+        ] + arguments
+
+        deadline_plugin.LogInfo(
+            f"Running denoise command: {subprocess.list2cmdline(command_to_run)}"
         )
-        command_to_run = f"{path_to_denoiser} {main_render_file_path} {denoise_render_file_path} {arguments}"
+        result = subprocess.run(command_to_run)
+        if result.returncode != 0:
+            deadline_plugin.LogWarning(
+                f"Denoising frame {frame_num} failed with exit code {result.returncode}"
+            )
 
-        deadline_plugin.LogInfo(f"Running denoise command: {command_to_run}")
-        subprocess.run(command_to_run)
 
-
-def construct_denoise_arguments(render_aov_list: list) -> str:
+def construct_denoise_arguments(render_aov_list: list) -> list:
     """Constructs a list of arguments for the idenoiser based on available aovs."""
     aovs_to_denoise = []
-    arguments = ""
+    arguments = []
 
     for aov in render_aov_list:
         if aov == "beauty":
             aovs_to_denoise.append("C")
 
         elif aov == "albedo":
-            arguments += "-a albedo "
+            arguments += ["-a", "albedo"]
             aovs_to_denoise.append("albedo")
 
-        elif aov == "hitN":
-            arguments += "-n N "
+        # Normal guide disabled on the farm copy (C:/pipeline/shotgrid), kept in sync here.
+        # elif aov == "hitN":
+        #     arguments += ["-n", "N"]
 
         elif aov.startswith("LG_"):
             aovs_to_denoise.append(aov)
@@ -138,6 +181,6 @@ def construct_denoise_arguments(render_aov_list: list) -> str:
         elif aov in DENOISABLE_AOVS:
             aovs_to_denoise.append(aov)
 
-    arguments += f"--aovs {' '.join(aovs_to_denoise)}"
+    arguments += ["--aovs"] + aovs_to_denoise
 
     return arguments
